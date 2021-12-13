@@ -7,6 +7,7 @@ const listRoute = require("./routes/list");
 // var path = require("path");
 var cors = require("cors");
 const userAuth = require("./routes/userAuth");
+require('dotenv').config();
 
 mongoose.Promise = global.Promise;
 mongoose
