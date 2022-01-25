@@ -3,11 +3,17 @@ const app = express();
 var mongoose = require("mongoose");
 var bodyParser = require("body-parser");
 var database = require("./config/db");
-const listRoute = require("./routes/list");
+const listRoute = require("./routes/taskList");
+const userAuthRoute = require("./routes/userAuth");
+const manageManager = require("./routes/manageManager");
+const manageEmployee = require("./routes/manageEmployee");
+const UserEdit = require("./routes/UserEdit");
+const ChatRoute = require("./routes/chatRoutes");
+const MessageRoute = require("./routes/messageRoutes");
+
 // var path = require("path");
 var cors = require("cors");
-const userAuth = require("./routes/userAuth");
-require('dotenv').config();
+require("dotenv").config();
 
 mongoose.Promise = global.Promise;
 mongoose
@@ -25,7 +31,7 @@ mongoose
   );
 
 app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({extended: false,}));
+app.use(bodyParser.urlencoded({extended: false}));
 app.use(cors());
 
 // Static directory path
@@ -33,7 +39,12 @@ app.use(cors());
 
 // API root
 app.use("/api", listRoute);
-app.use("/userAuth", userAuth);
+app.use("/userAuth", userAuthRoute);
+app.use("/manageManager", manageManager);
+app.use("/manageEmployee", manageEmployee);
+app.use("/UserEdit", UserEdit);
+app.use("/Chat", ChatRoute);
+app.use("/Message", MessageRoute);
 
 // Base Route
 // app.get("/", (req, res) => {
@@ -43,8 +54,42 @@ app.use("/userAuth", userAuth);
 
 // PORT
 const port = process.env.PORT || 8000;
-app.listen(port, () => {
+const server = app.listen(port, () => {
   console.log("Listening on port " + port);
+});
+
+const io = require("socket.io")(server, {
+  pingTimeout: 60000,
+  cors: {
+    origin: "http://localhost:3000",
+  },
+});
+
+io.on("connection", (socket) => {
+  console.log("connected to socket");
+
+  socket.on("chatSetup", (userData) => {
+    socket.join(userData._id);
+    socket.emit("connected");
+  });
+
+  socket.on("join chat", (room) => {
+    socket.join(room);
+    console.log("user joined room: " + room);
+  });
+
+  socket.on("new message", (newMessageReceived) => {
+    var chat = newMessageReceived.chat;
+
+    if (!chat.users) return console.log("chat.users not defined");
+
+    chat.users.forEach((user) => {
+      if (user._id == newMessageReceived.sender._id) return;
+
+      console.log("message sent");
+      socket.in(user._id).emit("message received", newMessageReceived);
+    });
+  });
 });
 
 // 404 Handler
