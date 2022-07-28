@@ -24,7 +24,7 @@ router.post("/", auth, async (req, res) => {
   });
 
   if (isChat.length > 0) {
-    res.status(200).send(isChat[0]);
+    res.status(200).send({chat: isChat[0], AlteadyExsists: true});
   } else {
     var chatData = {
       chatName: "sender",
@@ -35,7 +35,7 @@ router.post("/", auth, async (req, res) => {
       const createdChat = await Chat.create(chatData);
 
       const FullChat = await Chat.findOne({_id: createdChat.id}).populate("users", "-password");
-      res.status(200).send(FullChat);
+      res.status(200).send({chat: FullChat, AlteadyExsists: false});
     } catch (error) {
       res.status(400);
       throw new Error(error.message);
@@ -63,7 +63,7 @@ router.get("/", auth, async (req, res) => {
 });
 router.post("/group", auth, async (req, res) => {
   if (!req.body.users || !req.body.name) return res.status(400).send({message: "please fill all fields"});
-  var users = JSON.parse(req.body.users);
+  var users = req.body.users;
 
   if (users.length < 2) return res.status(400).send({message: "must be more than 2 users in group"});
 
