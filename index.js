@@ -49,10 +49,10 @@ app.use("/Chat", ChatRoute);
 app.use("/Message", MessageRoute);
 
 // Base Route
-// app.get("/", (req, res) => {
-//   res.send("hello");
-//   console.log("working");
-// });
+app.get("/", (req, res) => {
+  res.send("hello");
+  console.log("working");
+});
 
 // PORT
 const port = process.env.PORT || 8000;
