@@ -66,7 +66,11 @@ const SocketPort = process.env.PORT || 8080;
 //     origin: [clientUrl.localUrl, "https://admin.socket.io"],
 //   },
 // });
-const io = require("socket.io")(server);
+const io = require("socket.io")(server, {
+  cors: {
+    origin: [clientUrl.liveUrl, "https://admin.socket.io"],
+  },
+});
 
 app.listen(port, () => {
   console.log("Listening on port " + port);
