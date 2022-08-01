@@ -1,4 +1,3 @@
-const {instrument} = require("@socket.io/admin-ui");
 const express = require("express");
 const app = express();
 const http = require("http");
@@ -60,7 +59,7 @@ app.get("/", (req, res) => {
 
 // PORT
 const port = process.env.PORT || 8000;
-const SocketPort = process.env.PORT || 8080;
+// const SocketPort = process.env.PORT || 8080;
 
 // const io = require("socket.io")(process.env.PORT || 8080, {
 //   cors: {
@@ -69,7 +68,7 @@ const SocketPort = process.env.PORT || 8080;
 // });
 const io = require("socket.io")(server, {
   cors: {
-    origin: [clientUrl.liveUrl, "https://admin.socket.io"],
+    origin: ["https://managefy.netlify.app/"],
   },
 });
 
@@ -100,5 +99,3 @@ io.on("connection", (socket) => {
     io.sockets.to(selectedGroupUserIds).emit("new-group-edited", chat);
   });
 });
-
-instrument(io, {auth: false});
