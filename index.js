@@ -1,7 +1,7 @@
 const express = require("express");
 const app = express();
-const http = require("http");
-const server = http.createServer(app);
+// const http = require("http");
+// const server = http.createServer(app);
 const mongoose = require("mongoose");
 const bodyParser = require("body-parser");
 const database = require("./config/db");
@@ -61,6 +61,9 @@ app.get("/", (req, res) => {
 const port = process.env.PORT || 8000;
 // const SocketPort = process.env.PORT || 8080;
 
+const server = app.listen(port, () => {
+  console.log("Listening on port " + port);
+});
 // const io = require("socket.io")(process.env.PORT || 8080, {
 //   cors: {
 //     origin: [clientUrl.localUrl, "https://admin.socket.io"],
@@ -68,12 +71,9 @@ const port = process.env.PORT || 8000;
 // });
 const io = require("socket.io")(server, {
   cors: {
-    origin: ["https://managefy.netlify.app/"],
+    origin: ["https://managefy.netlify.app"],
+    methods: ["GET", "POST"],
   },
-});
-
-app.listen(port, () => {
-  console.log("Listening on port " + port);
 });
 
 io.on("connection", (socket) => {
