@@ -1,6 +1,7 @@
 const {instrument} = require("@socket.io/admin-ui");
 const express = require("express");
 const app = express();
+const server = http.createServer(app);
 const mongoose = require("mongoose");
 const bodyParser = require("body-parser");
 const database = require("./config/db");
@@ -65,13 +66,9 @@ const SocketPort = process.env.PORT || 8080;
 //     origin: [clientUrl.localUrl, "https://admin.socket.io"],
 //   },
 // });
-const io = require("socket.io")(SocketPort, {
-  cors: {
-    origin: [clientUrl.liveUrl, "https://admin.socket.io"],
-  },
-});
+const io = require("socket.io")(server);
 
-const server = app.listen(port, () => {
+app.listen(port, () => {
   console.log("Listening on port " + port);
 });
 
