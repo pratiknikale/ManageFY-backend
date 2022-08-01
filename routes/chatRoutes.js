@@ -79,6 +79,7 @@ router.post("/group", auth, async (req, res) => {
 
     const FullGroupChat = await Chat.findOne({_id: groupChat._id})
       .populate("users", "-password")
+      .populate("latestMessage")
       .populate("groupAdmin", "-password");
     res.status(200).send(FullGroupChat);
   } catch (error) {
@@ -99,6 +100,7 @@ router.put("/rename", auth, async (req, res) => {
     }
   )
     .populate("users", "-password")
+    .populate("latestMessage")
     .populate("groupAdmin", "-password");
 
   if (!updatedChat) {
@@ -119,6 +121,7 @@ router.put("/groupadd", auth, async (req, res) => {
     {new: true}
   )
     .populate("users", "-password")
+    .populate("latestMessage")
     .populate("groupAdmin", "-password");
 
   if (!added) {
@@ -139,6 +142,7 @@ router.put("/groupremove", auth, async (req, res) => {
     {new: true}
   )
     .populate("users", "-password")
+    .populate("latestMessage")
     .populate("groupAdmin", "-password");
 
   if (!removed) {

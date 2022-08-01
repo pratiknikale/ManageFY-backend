@@ -1,8 +1,9 @@
+const {instrument} = require("@socket.io/admin-ui");
 const express = require("express");
 const app = express();
-var mongoose = require("mongoose");
-var bodyParser = require("body-parser");
-var database = require("./config/db");
+const mongoose = require("mongoose");
+const bodyParser = require("body-parser");
+const database = require("./config/db");
 const listRoute = require("./routes/taskList");
 const userAuthRoute = require("./routes/userAuth");
 const manageManager = require("./routes/manageManager");
@@ -10,6 +11,17 @@ const manageEmployee = require("./routes/manageEmployee");
 const UserEdit = require("./routes/UserEdit");
 const ChatRoute = require("./routes/chatRoutes");
 const MessageRoute = require("./routes/messageRoutes");
+const clientUrl = require("./config/clientUrl");
+// const io = require("socket.io")(process.env.PORT || 8080, {
+//   cors: {
+//     origin: [clientUrl.localUrl, "https://admin.socket.io"],
+//   },
+// });
+const io = require("socket.io")(process.env.PORT || 8080, {
+  cors: {
+    origin: [clientUrl.liveUrl, "https://admin.socket.io"],
+  },
+});
 
 // test
 
@@ -59,3 +71,29 @@ const port = process.env.PORT || 8000;
 const server = app.listen(port, () => {
   console.log("Listening on port " + port);
 });
+
+io.on("connection", (socket) => {
+  // console.log(socket.id);
+  socket.on("setup", (userId) => {
+    socket.join(userId);
+  });
+
+  socket.on("Send-Message", (message, userOtherThanLoggedIDs, chat) => {
+    chat.latestMessage = message;
+    io.sockets.to(userOtherThanLoggedIDs).emit("Receive-Message", message, chat);
+  });
+
+  socket.on("create-new-Single-chat", (chat, userId) => {
+    io.sockets.to([userId]).emit("Single-Chat-Created", chat);
+  });
+
+  socket.on("create-group", (chat, selectedGroupUserIds) => {
+    io.sockets.to(selectedGroupUserIds).emit("new-group-chat", chat);
+  });
+
+  socket.on("group-edit", (chat, selectedGroupUserIds) => {
+    io.sockets.to(selectedGroupUserIds).emit("new-group-edited", chat);
+  });
+});
+
+instrument(io, {auth: false});
