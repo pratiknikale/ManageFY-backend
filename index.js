@@ -12,16 +12,6 @@ const UserEdit = require("./routes/UserEdit");
 const ChatRoute = require("./routes/chatRoutes");
 const MessageRoute = require("./routes/messageRoutes");
 const clientUrl = require("./config/clientUrl");
-// const io = require("socket.io")(process.env.PORT || 8080, {
-//   cors: {
-//     origin: [clientUrl.localUrl, "https://admin.socket.io"],
-//   },
-// });
-const io = require("socket.io")(process.env.PORT || 8080, {
-  cors: {
-    origin: [clientUrl.liveUrl, "https://admin.socket.io"],
-  },
-});
 
 // test
 
@@ -68,6 +58,19 @@ app.get("/", (req, res) => {
 
 // PORT
 const port = process.env.PORT || 8000;
+const SocketPort = process.env.PORT || 8080;
+
+// const io = require("socket.io")(process.env.PORT || 8080, {
+//   cors: {
+//     origin: [clientUrl.localUrl, "https://admin.socket.io"],
+//   },
+// });
+const io = require("socket.io")(SocketPort, {
+  cors: {
+    origin: [clientUrl.liveUrl, "https://admin.socket.io"],
+  },
+});
+
 const server = app.listen(port, () => {
   console.log("Listening on port " + port);
 });
