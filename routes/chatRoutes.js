@@ -30,11 +30,15 @@ router.post("/", auth, async (req, res) => {
       chatName: "sender",
       isGroupChat: false,
       users: [req.userID, userId],
+      notificationUsers: [userId],
     };
     try {
       const createdChat = await Chat.create(chatData);
 
-      const FullChat = await Chat.findOne({_id: createdChat.id}).populate("users", "-password");
+      const FullChat = await Chat.findOne({_id: createdChat.id})
+        .populate("users", "-password")
+        .populate("notificationUsers", "_id");
+
       res.status(200).send({chat: FullChat, AlteadyExsists: false});
     } catch (error) {
       res.status(400);
@@ -48,6 +52,7 @@ router.get("/", auth, async (req, res) => {
       .populate("users", "-password")
       .populate("groupAdmin", "-password")
       .populate("latestMessage")
+      .populate("notificationUsers", "_id")
       .sort({updatedAt: -1})
       .then(async (results) => {
         results = await Users.populate(results, {
@@ -68,6 +73,9 @@ router.post("/group", auth, async (req, res) => {
   if (users.length < 2) return res.status(400).send({message: "must be more than 2 users in group"});
 
   users.push(req.userID);
+  let otherThanLoggedUser = users.filter((users) => {
+    return users !== req.userID.toString();
+  });
 
   try {
     const groupChat = await Chat.create({
@@ -75,12 +83,14 @@ router.post("/group", auth, async (req, res) => {
       users: users,
       isGroupChat: true,
       groupAdmin: req.userID,
+      notificationUsers: otherThanLoggedUser,
     });
 
     const FullGroupChat = await Chat.findOne({_id: groupChat._id})
       .populate("users", "-password")
       .populate("latestMessage")
-      .populate("groupAdmin", "-password");
+      .populate("groupAdmin", "-password")
+      .populate("notificationUsers", "_id");
     res.status(200).send(FullGroupChat);
   } catch (error) {
     res.status(400);
@@ -101,7 +111,8 @@ router.put("/rename", auth, async (req, res) => {
   )
     .populate("users", "-password")
     .populate("latestMessage")
-    .populate("groupAdmin", "-password");
+    .populate("groupAdmin", "-password")
+    .populate("notificationUsers", "_id");
 
   if (!updatedChat) {
     res.status(400);
@@ -116,13 +127,14 @@ router.put("/groupadd", auth, async (req, res) => {
   const added = await Chat.findByIdAndUpdate(
     chatId,
     {
-      $push: {users: userId},
+      $push: {users: userId, notificationUsers: userId},
     },
     {new: true}
   )
     .populate("users", "-password")
     .populate("latestMessage")
-    .populate("groupAdmin", "-password");
+    .populate("groupAdmin", "-password")
+    .populate("notificationUsers", "_id");
 
   if (!added) {
     res.status(400);
@@ -137,19 +149,64 @@ router.put("/groupremove", auth, async (req, res) => {
   const removed = await Chat.findByIdAndUpdate(
     chatId,
     {
-      $pull: {users: userId},
+      $pull: {users: userId, notificationUsers: userId},
+      // $pull: {notificationUsers: userId},
     },
     {new: true}
   )
     .populate("users", "-password")
     .populate("latestMessage")
-    .populate("groupAdmin", "-password");
+    .populate("groupAdmin", "-password")
+    .populate("notificationUsers", "_id");
 
   if (!removed) {
     res.status(400);
     throw new Error("chat not found");
   } else {
     res.json(removed);
+  }
+});
+
+router.put("/setChatMessageRead", auth, async (req, res) => {
+  // input: req.body.userId ...... id of user who should be removed from notificationUsers
+
+  // console.log(req.body.chatId);
+  let userRemoved;
+
+  if (req.body.timeStampUpdate) {
+    await Chat.findByIdAndUpdate(req.body.chatId, {
+      $pull: {notificationUsers: req.body.userId},
+    })
+      .populate("users", "-password")
+      .populate("latestMessage")
+      .populate("groupAdmin", "-password")
+      .populate("notificationUsers", "_id")
+      .then(async (results) => {
+        results = await Users.populate(results, {
+          path: "latestMessage.sender",
+          select: "firstName lastName email",
+        });
+        res.status(200).send(results);
+      });
+  } else {
+    await Chat.findByIdAndUpdate(
+      req.body.chatId,
+      {
+        $pull: {notificationUsers: req.body.userId},
+      },
+      {timestamps: false}
+    )
+      .populate("users", "-password")
+      .populate("latestMessage")
+      .populate("groupAdmin", "-password")
+      .populate("notificationUsers", "_id")
+      .then(async (results) => {
+        results = await Users.populate(results, {
+          path: "latestMessage.sender",
+          select: "firstName lastName email",
+        });
+        res.status(200).send(results);
+      });
   }
 });
 

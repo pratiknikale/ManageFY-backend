@@ -9,12 +9,25 @@ taskList.get("/get", auth, (req, res) => {
   try {
     const mylist = async () => {
       const user = req.userID;
-      const data = await task.find({userID: user});
+      const data = await task.find({userID: user}).populate("userID", "_id firstName lastName").sort({updated_at: -1});
       res.json(data);
       // console.log(data);
     };
 
     mylist();
+  } catch (err) {
+    console.log(err);
+  }
+});
+
+taskList.get("/getmanagersAssignedTsk/:Id", auth, async (req, res) => {
+  try {
+    const managerId = req.params.Id;
+    const data = await task
+      .find({assignedBy: managerId})
+      .populate("userID", "_id firstName lastName")
+      .sort({updated_at: -1});
+    res.json(data);
   } catch (err) {
     console.log(err);
   }
@@ -23,10 +36,8 @@ taskList.get("/get", auth, (req, res) => {
 taskList.get("/getId/:id", auth, (req, res) => {
   try {
     const mylist = async () => {
-      const user = req.userID;
-      const data = await task.findOne({userID: user, _id: req.params.id});
+      const data = await task.findOne({_id: req.params.id}).populate("userID", "_id firstName lastName");
       res.json(data);
-      // console.log(data);
     };
 
     mylist();
@@ -35,8 +46,8 @@ taskList.get("/getId/:id", auth, (req, res) => {
   }
 });
 
-taskList.put("/updateStatus", auth, (req, res, next) => {
-  console.log(req.body);
+taskList.put("/updateSubTaskStatus", auth, (req, res, next) => {
+  // console.log(req.body);
   try {
     const mylist = async () => {
       const user = req.userID;
@@ -67,29 +78,56 @@ taskList.put("/updateStatus", auth, (req, res, next) => {
   }
 });
 
-taskList.put("/edit", auth, (req, res, next) => {
-  // console.log(req.body.data)
+taskList.put("/updateFullTaskStatus", auth, async (req, res) => {
+  console.log(req.body.status);
+  try {
+    const user = req.userID;
+    const TaskId = req.body.id;
+    const status = req.body.status === "pending" ? "pending" : "done";
+
+    await task
+      .updateOne(
+        {userID: user, _id: TaskId},
+        {
+          status: status,
+        }
+      )
+      .then(async () => {
+        const updatedTask = await task.findOne({_id: TaskId}).populate("userID", "_id firstName lastName");
+        if (!updatedTask) {
+          throw new Error();
+        } else {
+          res.status(200).send(updatedTask);
+        }
+      });
+  } catch (err) {
+    console.log(err);
+  }
+});
+
+taskList.put("/edit", auth, (req, res) => {
   try {
     const mylist = async () => {
-      const user = req.userID;
+      const user = req.body.location === "/mytasks" ? req.userID : req.body.data.assignto;
       const id = req.body.id;
-      task.updateOne(
-        {userID: user, _id: id},
-        {
-          task: req.body.data.task,
-          task_name: req.body.data.task_name,
-          sub_tasks: req.body.data.sub_tasks,
-        },
-        (error, data) => {
-          if (error) {
-            return next(error);
-            console.log(error);
-          } else {
-            res.json(data);
-            console.log("item updated successfully!");
+      await task
+        .updateOne(
+          {_id: id},
+          {
+            userID: user,
+            task: req.body.data.task,
+            task_name: req.body.data.task_name,
+            sub_tasks: req.body.data.sub_tasks,
           }
-        }
-      );
+        )
+        .then(async () => {
+          const updatedTask = await task.findOne({_id: id}).populate("userID", "_id firstName lastName");
+          if (!updatedTask) {
+            throw new Error();
+          } else {
+            res.status(200).send(updatedTask);
+          }
+        });
     };
 
     mylist();
@@ -99,41 +137,18 @@ taskList.put("/edit", auth, (req, res, next) => {
 });
 
 taskList.post("/insert", auth, (req, res) => {
-  //   console.log(req.body);
   try {
     const addTask = async () => {
-      const user = req.userID;
+      const user = req.body.location === "/mytasks" ? req.userID : req.body.item.assignto;
       const taskName = req.body.item.taskName;
       const discription = req.body.item.discription;
       const subTask = req.body.item.subTask;
-      const assignedBy = req.body.item.assignedBy;
+      const assignedBy = req.body.location === "/mytasks" ? req.body.item.assignedBy : req.userID;
       const date = new Date();
-      const day = date.getDate();
-      const months = [
-        "January",
-        "February",
-        "March",
-        "April",
-        "May",
-        "June",
-        "July",
-        "August",
-        "September",
-        "October",
-        "November",
-        "December",
-      ];
-      const month = months[date.getMonth()];
-      const year = date.getFullYear();
-      const hours = date.getHours();
-      const min = date.getMinutes();
-      const t = date.toLocaleTimeString();
-      const d = date.toLocaleDateString();
 
       if (assignedBy !== "private") {
         const data = await users.findOne({_id: assignedBy});
         const assigneeName = data.firstName + " " + data.lastName;
-        //   res.json(data);
 
         const newTask = new task({
           userID: user,
@@ -145,8 +160,10 @@ taskList.post("/insert", auth, (req, res) => {
           assigneeName: assigneeName,
         });
 
-        const result = await newTask.save();
-        res.send(result);
+        await newTask.save().then(async () => {
+          let createdTask = await task.findOne({userID: user}).populate("userID", "_id firstName lastName");
+          res.send(createdTask);
+        });
       } else {
         console.log("assigned by is set to " + assignedBy);
         const newTask = new task({
@@ -159,8 +176,10 @@ taskList.post("/insert", auth, (req, res) => {
           assigneeName: "private",
         });
 
-        const result = await newTask.save();
-        res.send(result);
+        await newTask.save().then(async () => {
+          let createdTask = await task.findOne({userID: user}).populate("userID", "_id firstName lastName");
+          res.send(createdTask);
+        });
       }
     };
     addTask().then(() => {

@@ -7,8 +7,6 @@ let users = require("../models/users");
 const auth = require("../middleware/auth");
 
 userAuth.post("/signup", async (req, res) => {
-  console.log("signup");
-  // console.log(req.body.Role)
   try {
     const email = req.body.Email;
     const password = req.body.Password;
@@ -29,9 +27,7 @@ userAuth.post("/signup", async (req, res) => {
       });
 
       const result = await newUser.save();
-      // console.log(result);
-      // res.send(result);
-      const token = jwt.sign({email: result.email, id: result._id}, "test", {expiresIn: "30d"});
+      const token = jwt.sign({email: result.email, id: result._id}, "test", {expiresIn: "1d"});
       res.status(200).json({result, token});
     };
 
@@ -42,9 +38,6 @@ userAuth.post("/signup", async (req, res) => {
 });
 
 userAuth.post("/signin", async (req, res) => {
-  // console.log("signin")
-  // console.log(req.body.Role)
-
   try {
     const email = req.body.Email;
     const password = req.body.Password;
@@ -61,13 +54,13 @@ userAuth.post("/signin", async (req, res) => {
       //   if (result.role === "employee")
       //     res.status(400).json({message: "You have entered Employee Credentials. Please signin through employee signin"});
 
-      const token = jwt.sign({email: email, id: result._id}, "test-manager", {expiresIn: "30d"});
+      const token = jwt.sign({email: email, id: result._id}, "test-manager", {expiresIn: "1d"});
       res.status(200).json({result, token});
     } else if (result.role === "employee") {
       //   if (result.role === "manager")
       //     res.status(400).json({message: "You have entered Manager Credentials. Please signin through manager signin"});
 
-      const token = jwt.sign({email: email, id: result._id}, "test", {expiresIn: "30d"});
+      const token = jwt.sign({email: email, id: result._id}, "test", {expiresIn: "1d"});
       res.status(200).json({result, token});
     }
   } catch (err) {
@@ -78,9 +71,6 @@ userAuth.post("/signin", async (req, res) => {
 
 //for new manager
 userAuth.post("/managersignup", auth, async (req, res) => {
-  // console.log("manager signup");
-
-  // console.log(req.body)
   try {
     const email = req.body.Email;
     const password = req.body.Password;
@@ -104,7 +94,7 @@ userAuth.post("/managersignup", auth, async (req, res) => {
         const result = await newUser.save();
         // console.log(result);
         // res.send(result);
-        const token = jwt.sign({email: result.email, id: result._id}, "test-manager", {expiresIn: "30d"});
+        const token = jwt.sign({email: result.email, id: result._id}, "test-manager", {expiresIn: "1d"});
         res.status(200).json({result, token});
       };
 

@@ -6,7 +6,7 @@ const Message = require("../models/messageModel");
 let Users = require("../models/users");
 
 router.post("/", auth, async (req, res) => {
-  const {content, chatId} = req.body;
+  const {content, chatId, userOtherThanLoggedIDs} = req.body;
 
   if (!content || !chatId) {
     console.log("invalid data passed into request");
@@ -30,9 +30,21 @@ router.post("/", auth, async (req, res) => {
 
     await Chat.findByIdAndUpdate(req.body.chatId, {
       latestMessage: message,
+      notificationUsers: userOtherThanLoggedIDs,
+    }).then(() => {
+      Chat.findOne({_id: req.body.chatId})
+        .populate("users", "-password")
+        .populate("groupAdmin", "-password")
+        .populate("latestMessage")
+        .populate("notificationUsers", "_id")
+        .then(async (results) => {
+          results = await Users.populate(results, {
+            path: "latestMessage.sender",
+            select: "firstName lastName email",
+          });
+          res.status(200).json({message: message, updatedChatResults: results});
+        });
     });
-
-    res.json(message);
   } catch (error) {
     res.status(400);
     throw new Error(error.message);
