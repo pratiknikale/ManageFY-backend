@@ -33,6 +33,40 @@ taskList.get("/getmanagersAssignedTsk/:Id", auth, async (req, res) => {
   }
 });
 
+taskList.get("/searchAssignedTask", auth, (req, res) => {
+  // const role = req.headers.role.split(" ")[1];
+  // console.log(req.body.role);
+  // const role = req.body.role === "manager" ? "employee" : "manager";
+
+  try {
+    const search = async () => {
+      const keyword = req.query.search
+        ? {
+            $or: [
+              // {"userID.firstName": {$regex: req.query.search, $options: "i"}},
+              // {"userID.lastName": {$regex: req.query.search, $options: "i"}},
+              {task_name: {$regex: req.query.search, $options: "i"}},
+              {status: {$regex: req.query.search, $options: "i"}},
+            ],
+          }
+        : {};
+      const searchedTask = await task
+        .find(keyword)
+        .find({assignedBy: {$eq: req.userID}})
+        .populate("userID", "_id firstName lastName")
+        .sort({updated_at: -1});
+
+      res.json(searchedTask);
+
+      // res.send(searchedUsers);
+    };
+
+    search();
+  } catch (err) {
+    console.log(err);
+  }
+});
+
 taskList.get("/getId/:id", auth, (req, res) => {
   try {
     const mylist = async () => {
