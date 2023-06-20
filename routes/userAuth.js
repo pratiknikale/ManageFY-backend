@@ -42,9 +42,9 @@ userAuth.post("/signin", async (req, res) => {
     const email = req.body.Email;
     const password = req.body.Password;
     const result = await users.findOne({email});
-    console.log(result.role);
 
     if (!result) return res.status(404).json({message: "no user found"});
+    console.log(result.role);
 
     const isPasswordCorrect = await bcrypt.compare(password, result.password);
 
